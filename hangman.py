@@ -13,6 +13,13 @@ lives = 10
 # 370,100 words
 # thanks for the dictionary tanducmai
 
+def resetGlobals():
+  global inputtedChars, hiddenWord, visibleWord, lives
+  inputtedChars = ""
+  visibleWord = ""
+  lives = 10
+  loadWord()
+
 
 def parseWord(chosenword): # there's a better way to do this but it works
   alphaonly = ""
@@ -23,7 +30,7 @@ def parseWord(chosenword): # there's a better way to do this but it works
 
 
 def loadWord():
-    global hiddenWord
+    global hiddenWord, visibleWord
     with open('words_dictionary.json') as wordfile:
       chosenword = wordfile.readlines()[random.randrange(370100)+1]
     hiddenWord = parseWord(chosenword)
@@ -31,8 +38,11 @@ def loadWord():
     if len(hiddenWord) > 10:
       print("Rerolling " + hiddenWord + " - Too long")
       loadWord()
+      return
+    # fill visibleWord with spaces on initialization to match the length of hiddenWord
+    for i in range(len(hiddenWord)):
+      visibleWord += " "
 
-loadWord()
 
 
 def drawLives():
@@ -120,29 +130,37 @@ def readInput(char):
     lives -= 1
 
 
+def restartPrompt():
+  screen.blit(text.render ("Press Enter to play again",
+                            True, # anti-aliasing
+                            (255, 255, 255)), # white
+                            (375, 340, 80, 80)) # positioning
+
+
 def checkWinOrLoss():
   if hiddenWord == visibleWord:
     screen.blit(text.render ("You win",
                             True, # anti-aliasing
                             (0, 255, 0)), # green
                             (480, 300, 80, 80)) # positioning
+    restartPrompt()
     return True
   if lives <= 0:
-    screen.blit(text.render ("You lose",
+    screen.blit(text.render (hiddenWord,
                             True, # anti-aliasing
                             (255, 0, 0)), # red
                             (480, 300, 80, 80)) # positioning
+    restartPrompt()
     return True
   return False
 
 
-# fill visibleWord with spaces on initialization to match the length of hiddenWord
-for i in range(len(hiddenWord)):
-  visibleWord += " "
+
 
 def main():
   running = True
   gameEnded = False
+  loadWord()
   # main loop
   while running:
     screen.fill((0, 0, 0))
@@ -161,6 +179,10 @@ def main():
             readInput(chr(event.key)) # converts the ascii code to string
           except:
             continue # player pressed shift or something which isn't a char
+        # press Enter to restart
+        elif event.key == pygame.K_RETURN:
+          resetGlobals()
+          gameEnded = False
       if event.type == pygame.QUIT:
         running = False
 
